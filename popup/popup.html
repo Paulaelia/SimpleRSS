@@ -1,12 +1,13 @@
 <html data-bs-theme="dark" lang="en">
   <head>
-    <link rel="stylesheet" href="popup.css" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <script src="popup.js"></script>
     <script src="bootstrap.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="popup.css" />
+    <script src="popup.js"></script>
   </head>
   <body>
-    <h1>Simple RSS Reader</h1>
+    <h1>Simple RSS Reader <button id="refresh-page" class="btn btn-outline"><i class="bi bi-arrow-clockwise"></i></button></h1>
     <div class="input-row">
       <div class="input-group mb-3">
         <span class="input-group-text">URL</span>
@@ -15,14 +16,37 @@
       </div>
     </div>
     <div id="error-message" class="alert alert-danger"></div>
+    <div id="loading-spinner" class="text-center">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
     <div id="feed-results">
       <div class="accordion accordion-flush" id="accordion">
 
       </div>
     </div>
     <div class="input-row">
-      <button id="clear-feeds" class="btn btn-danger">Clear Feeds</button>
-      <button id="refresh-page" class="btn btn-secondary">Refresh</button>
+      <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#eraseDataModel">Clear Feeds</button>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="eraseDataModel" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="eraseDataModel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="eraseDataModel">Clear Feeds</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            This will clear all feed data stored in the extension, including feed URLs and cached feed items. Are you sure you want to proceed?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-danger" id="clear-feeds">Clear All Feed Data</button>
+          </div>
+        </div>
+      </div>
     </div>
   </body>
 </html>

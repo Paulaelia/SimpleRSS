@@ -9,6 +9,28 @@ h1 {
     margin-bottom: 10px;
 }
 
+div {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.accordion-button {
+  /* Default (collapsed) state */
+  --bs-accordion-btn-bg: var(--bs-border-color);
+  --bs-accordion-btn-color: white;
+}
+
+.accordion-button:not(.collapsed) {
+  /* Active (expanded) state */
+  --bs-accordion-active-bg: var(--bs-purple);
+  --bs-accordion-active-color: white;
+}
+
 .badge {
     margin-left:15px;
+}
+
+.btn {
+    margin-left: 5px;
+    margin-right: 5px;
 }

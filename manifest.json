@@ -1,13 +1,15 @@
 {
   "name": "SimpleRSS",
   "description": "A Simple RSS Reader Extension",
-  "version": "0.1",
+  "version": "0.2",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": "images/rss.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab",
+    "scripting"
   ]
 }
