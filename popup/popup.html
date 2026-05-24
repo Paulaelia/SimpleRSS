@@ -1,0 +1,28 @@
+<html data-bs-theme="dark" lang="en">
+  <head>
+    <link rel="stylesheet" href="popup.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="popup.js"></script>
+    <script src="bootstrap.min.js"></script>
+  </head>
+  <body>
+    <h1>Simple RSS Reader</h1>
+    <div class="input-row">
+      <div class="input-group mb-3">
+        <span class="input-group-text">URL</span>
+        <input id="rss-url" type="url" class="form-control" placeholder="https://example.com/feed.xml" aria-label="URL" />
+        <button id="load-feed" class="btn btn-primary">Load Feed</button>
+      </div>
+    </div>
+    <div id="error-message" class="alert alert-danger"></div>
+    <div id="feed-results">
+      <div class="accordion accordion-flush" id="accordion">
+
+      </div>
+    </div>
+    <div class="input-row">
+      <button id="clear-feeds" class="btn btn-danger">Clear Feeds</button>
+      <button id="refresh-page" class="btn btn-secondary">Refresh</button>
+    </div>
+  </body>
+</html>
