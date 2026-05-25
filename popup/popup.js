@@ -27,6 +27,7 @@ window.addEventListener("DOMContentLoaded", () => {
 // #region Spinner Functions
 function showSpinner() {
   elements.spinner.style.display = "block";
+  elements.results.innerHTML = "";
 }
 
 function hideSpinner() {
@@ -56,6 +57,41 @@ function disableRefreshButton() {
 }
 // #endregion
 
+// #region Add Feed Functions
+function enableAddButton() {
+    elements.loadButton.disabled = false;
+}
+
+function disableAddButton() {
+    elements.loadButton.disabled = true;
+}
+// #endregion
+
+
+// #region Update Functions
+async function updateFeed(event) {
+  const id = event.target.id.split("-")[1];
+  const feed = feeds.find((feed) => feed.id == id);
+
+  try {
+    const xmlText = await fetchRss(feed.url);
+    const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+    if (doc.querySelector("parsererror")) {
+      showError("Update Feed: Feed XML is invalid or could not be parsed.");
+    }
+    const channel = doc.querySelector("channel");
+    const updated = new Date(channel?.querySelector("pubDate")?.textContent?.trim() || doc.querySelector("feed > updated")?.textContent?.trim() || Date.now());
+
+    feed.updated = updated;
+
+    await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+    displayFeeds();
+  } catch (error) {
+    showError(error.message);
+  }
+}
+// #endregion
+
 // #region Display Feed Functions
 async function loadFeeds() {
   chromeFeeds = await chrome.storage.sync.get("feeds");
@@ -73,10 +109,10 @@ function getFeedDate(xmlText) {
 }
 
 async function displayFeeds() {
-  disableRefreshButton()
+  disableRefreshButton();
+  disableAddButton();
   hideError();
   showSpinner();
-  elements.results.innerHTML = "";
   await loadFeeds();
   for (let i = 0; i < feeds.length; i++) {
     const feed = feeds[i];
@@ -85,21 +121,26 @@ async function displayFeeds() {
     if (getFeedDate(xmlText) > new Date(feed.updated)) {
       // NEW FEED UPDATE
       elements.results.innerHTML += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + feed.id + '" aria-expanded="false" aria-controls="collapse' + feed.id + '">' +
-        feed.id + ': ' + feed.title + '<span class="badge rounded-pill text-bg-danger">NEW</span></button></h2>';
+        feed.title + '<span class="badge rounded-pill text-bg-danger">NEW</span></button></h2>';
     } else {
       elements.results.innerHTML += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + feed.id + '" aria-expanded="false" aria-controls="collapse' + feed.id + '">' +
-        feed.id + ': ' + feed.title + '</button></h2>';
+        feed.title + '</button></h2>';
     }
       elements.results.innerHTML += '<div id="collapse' + feed.id + '" class="accordion-collapse collapse" data-bs-parent="#accordionExample"><div class="accordion-body">' +
-        '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i><button id="remove-' + i + '" class="btn btn-outline-danger float-end">Remove</button><button id="update-' + i + '" class="btn btn-outline-primary float-end">Update</button></p>' +
+        '<p><button id="update-' + i + '" class="btn btn-outline-primary">Mark Read</button><button id="remove-' + i + '" class="btn btn-outline-danger">Remove</button></p>' +
+        '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
         renderFeed(rssText) +
         '</div></div></div>';
   }
   document.querySelectorAll(".btn-outline-danger").forEach((button) => {
     button.addEventListener("click", removeFeed);
   });
+  document.querySelectorAll(".btn-outline-primary").forEach((button) => {
+    button.addEventListener("click", updateFeed);
+  });
   hideSpinner();
   enableRefreshButton();
+  enableAddButton();
 }
 
 function renderFeed(feed) {
@@ -157,14 +198,20 @@ async function clearFeeds() {
 // #region Save New Feed Functions
 async function loadFeed() {
   const feedUrl = elements.urlInput.value.trim();
-
+  disableAddButton();
+  disableRefreshButton();
+  hideError();
+  showSpinner();
   if (!feedUrl) {
+    hideSpinner();
+    enableAddButton();
+    enableRefreshButton();
     showError("Please enter a feed URL.");
     return;
   }
 
   try {
-    loadFeeds();
+    await loadFeeds();
 
     const newItem = {};
     const xmlText = await fetchRss(feedUrl);
@@ -189,6 +236,9 @@ async function loadFeed() {
     elements.urlInput.value = "";
     displayFeeds();
   } catch (error) {
+    hideSpinner();
+    enableAddButton();
+    enableRefreshButton();
     showError(error.message);
   }
 }

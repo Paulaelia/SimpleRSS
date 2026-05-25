@@ -1,7 +1,7 @@
 {
   "name": "SimpleRSS",
-  "description": "A Simple RSS Reader Extension",
-  "version": "0.2",
+  "description": "A Simple RSS Reader Extension created by Paul Surrette",
+  "version": "1.0",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup/popup.html",
