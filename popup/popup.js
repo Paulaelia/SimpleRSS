@@ -114,6 +114,7 @@ async function displayFeeds() {
   hideError();
   showSpinner();
   await loadFeeds();
+  updatedFeeds = 0;
   for (let i = 0; i < feeds.length; i++) {
     const feed = feeds[i];
     const xmlText = await fetchRss(feed.url);
@@ -122,6 +123,7 @@ async function displayFeeds() {
       // NEW FEED UPDATE
       elements.results.innerHTML += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + feed.id + '" aria-expanded="false" aria-controls="collapse' + feed.id + '">' +
         feed.title + '<span class="badge rounded-pill text-bg-danger">NEW</span></button></h2>';
+      updatedFeeds++;
     } else {
       elements.results.innerHTML += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + feed.id + '" aria-expanded="false" aria-controls="collapse' + feed.id + '">' +
         feed.title + '</button></h2>';
@@ -131,6 +133,11 @@ async function displayFeeds() {
         '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
         renderFeed(rssText) +
         '</div></div></div>';
+  }
+  if (updatedFeeds > 0) {
+    chrome.action.setBadgeText({ text: updatedFeeds.toLocaleString() });
+  } else {
+    chrome.action.setBadgeText({ text: null });
   }
   document.querySelectorAll(".btn-outline-danger").forEach((button) => {
     button.addEventListener("click", removeFeed);
@@ -249,16 +256,14 @@ async function fetchRss(feedUrl) {
   try {
     return await fetchText(feedUrl);
   } catch (error) {
-    //console.warn("Direct fetch failed, retrying with proxy:", error);
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`;
-    return await fetchText(proxyUrl);
+    showError(`Error fetching RSS Feed '${feedUrl}' - ${error.message}`);
   }
 }
 
 async function fetchText(url) {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error(`Unable to fetch feed (status ${response.status})`);
+    showError(`Unable to fetch feed '${url}' (Status: ${response.status})`);
   }
   return await response.text();
 }
