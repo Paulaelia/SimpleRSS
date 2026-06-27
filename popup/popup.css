@@ -34,3 +34,18 @@ div {
     margin-left: 5px;
     margin-right: 5px;
 }
+
+.favicon {
+    width: 24px;
+    height: 24px;
+    margin-right: 5px;
+     /* Prevents blue highlighting / text-like selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE10+ */
+    user-select: none;         /* Standard */
+
+    /* Prevents the image from being dragged out / ghost image */
+    -webkit-user-drag: none;   /* Safari and Chrome */
+    user-drag: none;           /* Standard */
+}

@@ -1,7 +1,7 @@
 {
   "name": "SimpleRSS",
   "description": "A Simple RSS Reader Extension created by Paul Surrette",
-  "version": "1.1",
+  "version": "1.2",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup/popup.html",
@@ -14,6 +14,7 @@
   ],
   "host_permissions": [
     "https://blog.neurosama.com/*",
-    "https://forums.spacebattles.com/*"
+    "https://forums.spacebattles.com/*",
+    "https://forums.sufficientvelocity.com/*"
   ]
 }

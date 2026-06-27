@@ -67,11 +67,10 @@ function disableAddButton() {
 }
 // #endregion
 
-
 // #region Update Functions
 async function updateFeed(event) {
   const id = event.target.id.split("-")[1];
-  const feed = feeds.find((feed) => feed.id == id);
+  const feed = feeds[id];
 
   try {
     const xmlText = await fetchRss(feed.url);
@@ -119,20 +118,39 @@ async function displayFeeds() {
     const feed = feeds[i];
     const xmlText = await fetchRss(feed.url);
     const rssText = await parseRss(xmlText);
+    let imageUrl = "/images/rss.png";
+    if (feed.url.startsWith("https://forums.sufficientvelocity.com/")) {
+      imageUrl = "/images/sv.png";
+    }
+    else if (feed.url.startsWith("https://forums.spacebattles.com/")) {
+      imageUrl = "/images/sb.png";
+    }
+
+    let htmlResult = "";
     if (getFeedDate(xmlText) > new Date(feed.updated)) {
       // NEW FEED UPDATE
-      elements.results.innerHTML += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + feed.id + '" aria-expanded="false" aria-controls="collapse' + feed.id + '">' +
-        feed.title + '<span class="badge rounded-pill text-bg-danger">NEW</span></button></h2>';
+      htmlResult += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + i + '" aria-expanded="false" aria-controls="collapse' + i + '">' +
+        '<span><img src="' + imageUrl + '" alt="RSS" class="favicon"></span>' + feed.title + '<span class="badge rounded-pill text-bg-danger">NEW</span></button></h2>' +
+        '<div id="collapse' + i + '" class="accordion-collapse collapse" data-bs-parent="#accordion"><div class="accordion-body"><p>' +
+        '<button id="update-' + i + '" class="btn btn-outline-primary">Mark Read</button>';
       updatedFeeds++;
     } else {
-      elements.results.innerHTML += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + feed.id + '" aria-expanded="false" aria-controls="collapse' + feed.id + '">' +
-        feed.title + '</button></h2>';
+      htmlResult += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + i + '" aria-expanded="false" aria-controls="collapse' + i + '">' +
+        '<span><img src="' + imageUrl + '" alt="RSS" class="favicon"></span>' + feed.title + '</button></h2>' +
+        '<div id="collapse' + i + '" class="accordion-collapse collapse" data-bs-parent="#accordion"><div class="accordion-body"><p>';
     }
-      elements.results.innerHTML += '<div id="collapse' + feed.id + '" class="accordion-collapse collapse" data-bs-parent="#accordionExample"><div class="accordion-body">' +
-        '<p><button id="update-' + i + '" class="btn btn-outline-primary">Mark Read</button><button id="remove-' + i + '" class="btn btn-outline-danger">Remove</button></p>' +
-        '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
-        renderFeed(rssText) +
-        '</div></div></div>';
+    htmlResult += '<button id="remove-' + i + '" class="btn btn-outline-danger">Remove</button>';
+    if (i > 0) {
+      htmlResult += '<button id="moveTop-' + i + '" class="btn btn-outline-success">Move to Top</button>';
+    }
+    if (i < feeds.length - 1) {
+      htmlResult += '<button id="moveBottom-' + i + '" class="btn btn-outline-info">Move to Bottom</button>';
+    }
+    htmlResult += '</p>' +
+      '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
+      renderFeed(rssText) +
+      '</div></div></div>';
+    elements.results.innerHTML += htmlResult;
   }
   if (updatedFeeds > 0) {
     chrome.action.setBadgeText({ text: updatedFeeds.toLocaleString() });
@@ -144,6 +162,12 @@ async function displayFeeds() {
   });
   document.querySelectorAll(".btn-outline-primary").forEach((button) => {
     button.addEventListener("click", updateFeed);
+  });
+  document.querySelectorAll(".btn-outline-success").forEach((button) => {
+    button.addEventListener("click", moveFeedToTop);
+  });
+  document.querySelectorAll(".btn-outline-info").forEach((button) => {
+    button.addEventListener("click", moveFeedToBottom);
   });
   hideSpinner();
   enableRefreshButton();
@@ -183,15 +207,30 @@ function renderFeed(feed) {
 }
 // #endregion
 
+// #region Move Feed Functions
+async function moveFeedToTop(event) {
+  const id = event.target.id.split("-")[1];
+  if (id === -1) return;
+  feedToMove = feeds.splice(id, 1);
+  feeds.unshift(feedToMove[0]);
+  await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+  displayFeeds();
+}
+
+async function moveFeedToBottom(event) {
+  const id = event.target.id.split("-")[1];
+  if (id === -1) return;
+  feedToMove = feeds.splice(id, 1);
+  feeds.push(feedToMove[0]);
+  await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+  displayFeeds();
+}
+// #endregion
+
 // #region Remove Feed Functions
 async function removeFeed(event) {
   const id = event.target.id.split("-")[1];
-  feeds = feeds.filter((feed) => feed.id != id);
-  var count = 0;
-  for (const feed of feeds) {
-    feed.id = count;
-    count++;
-  }
+  feeds.splice(id, 1);
   await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
   displayFeeds();
 }
@@ -230,7 +269,6 @@ async function loadFeed() {
     const title = channel?.querySelector("title")?.textContent?.trim() || doc.querySelector("feed > title")?.textContent?.trim() || "Untitled feed";
     const updated = new Date(channel?.querySelector("pubDate")?.textContent?.trim() || doc.querySelector("feed > updated")?.textContent?.trim() || Date.now());
 
-    newItem.id = feeds.length;
     newItem.url = feedUrl;
     newItem.title = title;
     newItem.updated = updated;
@@ -238,7 +276,7 @@ async function loadFeed() {
     //const feed = parseRss(xmlText);
     //renderFeed(feed);
 
-    feeds.push(newItem);
+    feeds.unshift(newItem);
     await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
     elements.urlInput.value = "";
     displayFeeds();
