@@ -1,8 +1,11 @@
 {
   "name": "SimpleRSS",
   "description": "A Simple RSS Reader Extension created by Paul Surrette",
-  "version": "1.2b",
+  "version": "1.3",
   "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": "images/rss.png"
@@ -10,11 +13,10 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "alarms"
   ],
   "host_permissions": [
-    "https://blog.neurosama.com/*",
-    "https://forums.spacebattles.com/*",
-    "https://forums.sufficientvelocity.com/*"
+    "https://*/*"
   ]
 }
