@@ -69,9 +69,8 @@ function disableAddButton() {
 
 // #region Update Functions
 async function updateFeed(event) {
-  const id = event.target.id.split("-")[1];
+  const id = event.currentTarget.id.split("-")[1];
   const feed = feeds[id];
-
   try {
     const xmlText = await fetchRss(feed.url);
     const doc = new DOMParser().parseFromString(xmlText, "application/xml");
@@ -86,7 +85,7 @@ async function updateFeed(event) {
     await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
     displayFeeds();
   } catch (error) {
-    showError(error.message);
+    showError("Update Feed: " + error.message);
   }
 }
 // #endregion
@@ -132,21 +131,21 @@ async function displayFeeds() {
       htmlResult += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + i + '" aria-expanded="false" aria-controls="collapse' + i + '">' +
         '<span><img src="' + imageUrl + '" alt="RSS" class="favicon"></span>' + feed.title + '<span class="badge rounded-pill text-bg-danger">NEW</span></button></h2>' +
         '<div id="collapse' + i + '" class="accordion-collapse collapse" data-bs-parent="#accordion"><div class="accordion-body"><p>' +
-        '<button id="update-' + i + '" class="btn btn-outline-primary">Mark Read</button>';
+        '<button title="Mark Read" id="update-' + i + '" class="btn btn-outline-primary"><i class="bi bi-bookmark-check"></i></button>';
       updatedFeeds++;
     } else {
       htmlResult += '<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + i + '" aria-expanded="false" aria-controls="collapse' + i + '">' +
         '<span><img src="' + imageUrl + '" alt="RSS" class="favicon"></span>' + feed.title + '</button></h2>' +
         '<div id="collapse' + i + '" class="accordion-collapse collapse" data-bs-parent="#accordion"><div class="accordion-body"><p>';
     }
-    htmlResult += '<button id="remove-' + i + '" class="btn btn-outline-danger">Remove</button>';
+    htmlResult += '<button title="Remove" id="remove-' + i + '" class="btn btn-outline-danger"><i class="bi bi-file-earmark-x"></i></button>';
     if (i > 0) {
-      htmlResult += '<button id="moveTop-' + i + '" class="btn btn-outline-success">Move to Top</button>';
+      htmlResult += '<button title="Move to Top" id="moveTop-' + i + '" class="btn btn-outline-success"><i class="bi bi-arrow-bar-up"></i></button>';
     }
     if (i < feeds.length - 1) {
-      htmlResult += '<button id="moveBottom-' + i + '" class="btn btn-outline-info">Move to Bottom</button>';
+      htmlResult += '<button title="Move to Bottom" id="moveBottom-' + i + '" class="btn btn-outline-info"><i class="bi bi-arrow-bar-down"></i></button>';
     }
-    htmlResult += '</p>' +
+    htmlResult += '<span style="margin-left: 10px;"><a href="' + feed.url + '" title="View Feed" target="_blank" rel="noopener noreferrer"><i class="bi bi-rss"></i></a></span></p>' +
       '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
       renderFeed(rssText) +
       '</div></div></div>';
@@ -209,35 +208,51 @@ function renderFeed(feed) {
 
 // #region Move Feed Functions
 async function moveFeedToTop(event) {
-  const id = event.target.id.split("-")[1];
-  if (id === -1) return;
-  feedToMove = feeds.splice(id, 1);
-  feeds.unshift(feedToMove[0]);
-  await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
-  displayFeeds();
+  try {
+    const id = event.currentTarget.id.split("-")[1];
+    if (id === -1) return;
+    feedToMove = feeds.splice(id, 1);
+    feeds.unshift(feedToMove[0]);
+    await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+    displayFeeds();
+  } catch (error) {
+    showError("Move Feed to Top: " + error.message);
+  }
 }
 
 async function moveFeedToBottom(event) {
-  const id = event.target.id.split("-")[1];
-  if (id === -1) return;
-  feedToMove = feeds.splice(id, 1);
-  feeds.push(feedToMove[0]);
-  await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
-  displayFeeds();
+  try {
+    const id = event.currentTarget.id.split("-")[1];
+    if (id === -1) return;
+    feedToMove = feeds.splice(id, 1);
+    feeds.push(feedToMove[0]);
+    await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+    displayFeeds();
+  } catch (error) {
+    showError("Move Feed to Bottom: " + error.message);
+  }
 }
 // #endregion
 
 // #region Remove Feed Functions
 async function removeFeed(event) {
-  const id = event.target.id.split("-")[1];
-  feeds.splice(id, 1);
-  await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
-  displayFeeds();
+  try {
+    const id = event.currentTarget.id.split("-")[1];
+    feeds.splice(id, 1);
+    await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+    displayFeeds();
+  } catch (error) {
+    showError("Remove Feed: " + error.message);
+  }
 }
 
 async function clearFeeds() {
-   await chrome.storage.sync.set({ "feeds": JSON.stringify([])});
-   displayFeeds();
+  try {
+    await chrome.storage.sync.set({ "feeds": JSON.stringify([])});
+    displayFeeds();
+  } catch (error) {
+    showError("Clear Feeds: " + error.message);
+  }
 }
 // #endregion
 
@@ -294,14 +309,14 @@ async function fetchRss(feedUrl) {
   try {
     return await fetchText(feedUrl);
   } catch (error) {
-    showError(`Error fetching RSS Feed '${feedUrl}' - ${error.message}`);
+    showError(`Fetch RSS: Error fetching RSS Feed '${feedUrl}' - ${error.message}`);
   }
 }
 
 async function fetchText(url) {
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
-    showError(`Unable to fetch feed '${url}' (Status: ${response.status})`);
+    showError(`Fetch Text: Unable to fetch feed '${url}' (Status: ${response.status})`);
   }
   return await response.text();
 }
@@ -309,7 +324,7 @@ async function fetchText(url) {
 function parseRss(xmlText) {
   const doc = new DOMParser().parseFromString(xmlText, "application/xml");
   if (doc.querySelector("parsererror")) {
-    showError("Feed XML is invalid or could not be parsed.");
+    showError("Parse RSS: Feed XML is invalid or could not be parsed.");
   }
 
   const channel = doc.querySelector("channel");
