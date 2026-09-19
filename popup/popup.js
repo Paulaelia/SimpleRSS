@@ -163,7 +163,7 @@ async function displayFeeds() {
     if (feed.showCount) {
       htmlResult += '<p class="form-check form-switch"><input class="form-check-input" type="checkbox" checked role="switch" id="switchCount-' + i + '" switch> <input type="text" maxlength="100" class="form-control" placeholder="#" aria-label="Count" id="inputCount-' + i + '" style="width: 200px;" value="' + feed.count + '"></p>';
     } else {
-      htmlResult += '<p class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="switchCount-' + i + '" switch> <input type="text" maxlength="100" class="form-control" placeholder="#" aria-label="Count" id="inputCount-' + i + '" style="width: 10px;" value="' + feed.count + '" hidden></p>';
+      htmlResult += '<p class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="switchCount-' + i + '" switch> <input type="text" maxlength="100" class="form-control" placeholder="#" aria-label="Count" id="inputCount-' + i + '" style="width: 200px;" value="' + feed.count + '" hidden></p>';
     }
     htmlResult += '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
       renderFeed(rssText) +
