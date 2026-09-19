@@ -9,14 +9,14 @@ async function fetchRss(feedUrl) {
   try {
     return await fetchText(feedUrl);
   } catch (error) {
-    showError(`Error fetching RSS Feed '${feedUrl}' - ${error.message}`);
+    throw new Error(`Error fetching RSS Feed '${feedUrl}' - ${error.message}`);
   }
 }
 
 async function fetchText(url) {
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
-    showError(`Unable to fetch feed '${url}' (Status: ${response.status})`);
+    throw new Error(`Unable to fetch feed '${url}' (Status: ${response.status})`);
   }
   return await response.text();
 }

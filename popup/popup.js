@@ -7,6 +7,8 @@ window.addEventListener("DOMContentLoaded", () => {
   elements.loadButton = document.getElementById("load-feed");
   elements.clearButton = document.getElementById("clear-feeds");
   elements.refreshButton = document.getElementById("refresh-page");
+  elements.exportButton = document.getElementById("Export");
+  elements.importButton = document.getElementById("Import");
   elements.results = document.getElementById("accordion");
   elements.spinner = document.getElementById("loading-spinner");
   hideSpinner();
@@ -19,6 +21,8 @@ window.addEventListener("DOMContentLoaded", () => {
   elements.loadButton.addEventListener("click", loadFeed);
   elements.clearButton.addEventListener("click", clearFeeds);
   elements.refreshButton.addEventListener("click", displayFeeds);
+  elements.exportButton.addEventListener("click", exportData);
+  elements.importButton.addEventListener("click", importData);
   console.log("Elements loaded and event listeners attached", elements);
 
   
@@ -94,6 +98,16 @@ async function updateFeed(event) {
 async function loadFeeds() {
   chromeFeeds = await chrome.storage.sync.get("feeds");
   feeds = JSON.parse(chromeFeeds.feeds || "[]");
+
+  // Make sure each feed has the new properties
+  feeds.forEach(feed => {
+    if (feed.showCount === undefined) {
+      feed.showCount = false;
+    }
+    if (feed.count === undefined) {
+      feed.count = 0;
+    }
+  });
 }
 
 function getFeedDate(xmlText) {
@@ -145,8 +159,13 @@ async function displayFeeds() {
     if (i < feeds.length - 1) {
       htmlResult += '<button title="Move to Bottom" id="moveBottom-' + i + '" class="btn btn-outline-info"><i class="bi bi-arrow-bar-down"></i></button>';
     }
-    htmlResult += '<span style="margin-left: 10px;"><a href="' + feed.url + '" title="View Feed" target="_blank" rel="noopener noreferrer"><i class="bi bi-rss"></i></a></span></p>' +
-      '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
+    htmlResult += '<a href="' + feed.url + '" title="View Feed" class="btn btn-outline-warning" target="_blank" rel="noopener noreferrer"><i class="bi bi-rss"></i></a></p>';
+    if (feed.showCount) {
+      htmlResult += '<p class="form-check form-switch"><input class="form-check-input" type="checkbox" checked role="switch" id="switchCount-' + i + '" switch> <input type="text" maxlength="100" class="form-control" placeholder="#" aria-label="Count" id="inputCount-' + i + '" style="width: 200px;" value="' + feed.count + '"></p>';
+    } else {
+      htmlResult += '<p class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="switchCount-' + i + '" switch> <input type="text" maxlength="100" class="form-control" placeholder="#" aria-label="Count" id="inputCount-' + i + '" style="width: 10px;" value="' + feed.count + '" hidden></p>';
+    }
+    htmlResult += '<p><b>Last Updated:</b> <i>' + new Date(feed.updated).toLocaleString() + '</i></p>' +
       renderFeed(rssText) +
       '</div></div></div>';
     elements.results.innerHTML += htmlResult;
@@ -167,6 +186,12 @@ async function displayFeeds() {
   });
   document.querySelectorAll(".btn-outline-info").forEach((button) => {
     button.addEventListener("click", moveFeedToBottom);
+  });
+  document.querySelectorAll(".form-check-input").forEach((checkbox) => {
+    checkbox.addEventListener("change", changeSwitchCount);
+  });
+  document.querySelectorAll(".form-control").forEach((input) => {
+    input.addEventListener("input", changeCountValue);
   });
   hideSpinner();
   enableRefreshButton();
@@ -256,6 +281,41 @@ async function clearFeeds() {
 }
 // #endregion
 
+// #region Swtich Count Functions
+async function changeSwitchCount(event) {
+  try {
+    const id = event.currentTarget.id.split("-")[1];
+    if (event.currentTarget.checked) {
+      feeds[id].showCount = true;
+      document.getElementById("inputCount-" + id).hidden = false;
+      await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+    } else {
+      feeds[id].showCount = false;
+      document.getElementById("inputCount-" + id).hidden = true;
+      await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+    }
+  }
+  catch (error) {
+    showError("Change Switch Count: " + error.message);
+  }
+}
+
+function escapeHtmlQuotes(str) {
+  return str
+    .replace(/"/g, '&quot;')  // Converts double quotes
+    .replace(/'/g, '&#39;');   // Converts single quotes
+}
+
+async function changeCountValue(event) {
+  try {
+    const id = event.currentTarget.id.split("-")[1];
+    feeds[id].count = escapeHtmlQuotes(event.currentTarget.value);
+    await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds)});
+  } catch (error) {
+    showError("Change Count Value: " + error.message);
+  }
+}
+
 // #region Save New Feed Functions
 async function loadFeed() {
   const feedUrl = elements.urlInput.value.trim();
@@ -287,6 +347,8 @@ async function loadFeed() {
     newItem.url = feedUrl;
     newItem.title = title;
     newItem.updated = updated;
+    newItem.showCount = false;
+    newItem.count = 0;
 
     //const feed = parseRss(xmlText);
     //renderFeed(feed);
@@ -348,5 +410,48 @@ function parseRss(xmlText) {
   });
 
   return { title, items };
+}
+// #endregion
+
+// #region Export and Import Functions
+async function exportData() {
+  try {
+    loadFeeds();
+    const jsonData = JSON.stringify(feeds);
+    const blob = new Blob([jsonData], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "SimpleRSS-feeds.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    showError("Export Data: " + error.message);
+  }
+}
+
+async function importData() {
+  try {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const jsonData = e.target.result;
+        const feeds = JSON.parse(jsonData);
+        await chrome.storage.sync.set({ "feeds": JSON.stringify(feeds) });
+        displayFeeds();
+      };
+      reader.readAsText(file);
+    });
+    input.click();
+  } catch (error) {
+    showError("Import Data: " + error.message);
+  }
 }
 // #endregion
